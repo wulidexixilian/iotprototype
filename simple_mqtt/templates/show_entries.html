@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block body %}
+  {% if session.logged_in %}
+    <form action="{{ url_for('connect_mqtt') }}" method=post class=add-entry>
+      <dl>
+        <dt>Listen to Mqtt_broker:
+        <dd><input type=text value="127.0.0.1" size=30 name=Mqtt_Server>
+        <dt>Port:
+        <dd><input type=text value="1883" size=30 name=Port>
+        <dd><input type=submit value=Connect>
+      </dl>
+    </form>
+
+    <form action="{{ url_for('pub_entry') }}" method=post class=add-entry>
+      <dl>
+        <dt>Publish to Mqtt_broker:
+        <dd><input type=text value="127.0.0.1" size=30 name=Mqtt_Server>
+        <dt>Port:
+        <dd><input type=text value="1883" size=30 name=Port>
+        <dt>Topic:
+        <dd><input type=text value="msg_to_server" size=30 name=Topic>
+        <dt>Message:
+        <dd><textarea name=Message rows=5 cols=40></textarea>
+        <dd><input type=submit value=Publish>
+      </dl>
+    </form>
+
+    <form action="{{ url_for('delete_all') }}" method=post class=add-entry>
+      <dl>
+        <dd><input type=submit value=Delete_all>
+      </dl>
+    </form>
+  {% endif %}
+  <ul class=entries>
+  {% for entry in entries %}
+    <li><h2>{{ entry.title }}</h2>{{ entry.text|safe }}
+  {% else %}
+    <li><em>Database where a continuously running mqtt client stores data it subscribed</em>
+  {% endfor %}
+  </ul>
+{% endblock %}
