@@ -1,0 +1,3 @@
+graft simple_mqtt/templates
+graft simple_mqtt/static
+include simple_mqtt/schema.sql
