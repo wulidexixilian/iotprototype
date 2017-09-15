@@ -1,5 +1,13 @@
 # iotprototype
 prototype project to verify feasibility of embed mqtt protocal (Mosquitto) to a web server (programmed in flask framework). 
+## Requirements
+* Python 3.6 -- Python distribution
+* flask -- Web App framework
+* numpy -- python linear algeba lab
+* (Install Anaconda 3 for all above and a lot more)
+* Mosquitto -- a MQTT realizaiton
+* eclipse.paho -- Python MQTT client class
+
 ## Installation
 * Simply copy the directory.
 * Start the web application by run simple_mqtt/simple_mqtt.py.
