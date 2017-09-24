@@ -168,7 +168,7 @@ def on_message(client, userdata, msg):
 
 if __name__ == '__main__':
     # start mqtt broker in a new process
-    subprocess.Popen('mosquitto -v', shell=True)
+    subprocess.Popen('mosquitto -p 1883', shell=True)
     # define mqtt clients
     client_sub = mqtt.Client()
     client_sub.on_connect = on_connect_receive
