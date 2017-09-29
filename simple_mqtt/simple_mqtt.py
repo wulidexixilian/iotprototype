@@ -3,15 +3,16 @@
 the whole app
 """
 
+import json
 import os
 import sqlite3
-from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash
-import paho.mqtt.client as mqtt
 import subprocess
-import json
 import numpy
-import time
+import paho.mqtt.client as mqtt
+from flask import Flask, g, request, session, redirect, url_for, abort, \
+    render_template, flash
+from celery import Celery
+
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -23,6 +24,24 @@ app.config.update(dict(
 ))
 app.config.from_envvar('SIMPLEMQTT_SETTINGS', silent=True)
 
+
+def make_celery():
+    celery_app = Celery(app.name,
+                        broker='amqp://',
+                        backend='amqp://',
+                        include='simple_mqtt')
+
+    # Optional configuration, see the application user guide.
+    celery_app.conf.update(
+        result_expires=3600,
+        imports=['simple_mqtt'],
+    )
+    celery_app.conf.update()
+    return celery_app
+
+
+celery_app = make_celery()
+# start worker by: simple_mqtt user$celery -A simple_mqtt:celery_app worker --loglevel=info
 
 def connect_db():
     """Connects to the specific database."""
@@ -38,13 +57,6 @@ def init_db():
     db.commit()
 
 
-@app.cli.command('initdb')
-def initdb_command():
-    """Initializes the database."""
-    init_db()
-    print('Initialized the database.')
-
-
 def get_db():
     """Opens a new database connection if there is none yet for the
     current application context.
@@ -52,6 +64,13 @@ def get_db():
     if not hasattr(g, 'sqlite_db'):
         g.sqlite_db = connect_db()
     return g.sqlite_db
+
+
+@app.cli.command('initdb')
+def initdb_command():
+    """Initializes the database."""
+    init_db()
+    print('Initialized the database.')
 
 
 @app.teardown_appcontext
@@ -66,7 +85,6 @@ def show_entries():
     db = get_db()
     cur = db.execute('select title, text from entries order by id desc')
     entries = cur.fetchall()
-
     return render_template('show_entries.html', entries=entries)
 
 
@@ -80,9 +98,9 @@ def pub_entry():
     # db.commit()
     addr = request.form['Mqtt_Server']
     port = request.form['Port']
-    client_pub.connect(addr, int(port), 60)
-    client_pub.publish(request.form['Topic'], payload=request.form['Message'])
-    client_pub.disconnect()
+    topic = request.form['Topic']
+    material = request.form['Message']
+    mqtt_result = pub_a_msg.delay(addr, port, topic, material)
     flash('New Publish')
     return redirect(url_for('show_entries'))
 
@@ -104,8 +122,7 @@ def connect_mqtt():
         abort(401)
     addr = request.form['Mqtt_Server']
     port = request.form['Port']
-    client_sub.connect(addr, int(port), 60)
-    client_sub.loop_start()
+    result_mqtt = sub_holdon.delay(addr, port)
     flash('Mqtt listener online')
     return redirect(url_for('show_entries'))
 
@@ -166,14 +183,30 @@ def on_message(client, userdata, msg):
     print('db updated')
 
 
+client_sub = mqtt.Client()
+client_sub.on_connect = on_connect_receive
+client_sub.on_message = on_message
+client_pub = mqtt.Client()
+client_pub.on_connect = on_connect_pub
+
+
+@celery_app.task
+def pub_a_msg(addr, port, topic, material):
+    client_pub.connect(addr, int(port), 60)
+    client_pub.publish(topic, payload=material)
+    client_pub.disconnect()
+    pass
+
+
+@celery_app.task
+def sub_holdon(addr, port):
+    client_sub.connect(addr, int(port), 60)
+    client_sub.loop_start()
+    pass
+
+
 if __name__ == '__main__':
     # start mqtt broker in a new process
-    subprocess.Popen('mosquitto -p 1883', shell=True)
-    # define mqtt clients
-    client_sub = mqtt.Client()
-    client_sub.on_connect = on_connect_receive
-    client_sub.on_message = on_message
-    client_pub = mqtt.Client()
-    client_pub.on_connect = on_connect_pub
-    app.run(host='0.0.0.0', debug=0)
-    # app.run()
+    # subprocess.Popen('mosquitto -p 1883', shell=True)
+    # app.run(host='0.0.0.0', debug=0)
+    app.run()
