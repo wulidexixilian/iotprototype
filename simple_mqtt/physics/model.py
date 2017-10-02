@@ -37,6 +37,9 @@ class Rotor:
 
 class Motor()
     def __init__(self):
+        """
+        initialize an electrical motor
+        """
         self._rotor = Rotor()
         self._temperature = None
 
@@ -67,7 +70,7 @@ class Pump:
         self._outlet = PressureNode()
         self._rotor = Rotor()
         self._displacement = 0
-        
+
     @property
     def flow(self):
         return self._rotor.omega * self._displacement
@@ -78,7 +81,8 @@ class Source:
         """
         Initialization of hydraulic power source. It includes information of tank, pump, and relevant circuits.
         """
-        self.pump = Pump()
-        self.intake = self.pump.intake
-        self.outlet = self.pump.outlet
+        self._pump = Pump()
+        self._intake = self._pump.intake
+        self._outlet = self._pump.outlet
+        self._motor = Motor()
         pass
