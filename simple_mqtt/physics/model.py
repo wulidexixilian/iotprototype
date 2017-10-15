@@ -1,3 +1,6 @@
+import json
+
+
 class PhysicsObject:
     # abstract father class for all physic abstractions
     def __init__(self):
@@ -12,8 +15,41 @@ class PhysicsObject:
     def diagnose(self):
         pass
 
+    def beat(self, ts):
+        pass
 
-class PressureNode:
+    def to_dict(self):
+        """
+        convert the object into a dict
+        :return:
+        """
+        d = dict()
+        # check each attribute
+        for key in self.__dict__:
+            sub_obj = self.__dict__[key]
+            if 'to_dict' in sub_obj.__dir__():
+                # if this attribute is a physic model object, call its to_dict() method to step into it
+                d[key] = sub_obj.to_dict()
+            elif isinstance(sub_obj, list):
+                # if this attribute is a list, check it one by one with the same logic
+                d[key] = []
+                for item in sub_obj:
+                    if 'to_dict' in item.__dir__():
+                        d[key].append(item.to_dict())
+                    else:
+                        d[key].append(item)
+            else:
+                # if this attribute is a basic data, add this to dict
+                d[key] = sub_obj
+        return d
+
+    def to_json(self):
+        d = self.to_dict()
+        j = json.dumps(d, sort_keys=True, indent=4)
+        return j
+
+
+class PressureNode(PhysicsObject):
     def __init__(self):
         """
         initialize a hydraulic node, which maintains data of pressure,
@@ -26,7 +62,7 @@ class PressureNode:
         pass
 
 
-class Rotor:
+class Rotor(PhysicsObject):
     def __init__(self):
         """
         initialize a basic rotation element
@@ -42,7 +78,7 @@ class Rotor:
         self._omega = value
 
 
-class Motor:
+class Motor(PhysicsObject):
     def __init__(self):
         """
         initialize an electrical motor
@@ -59,7 +95,7 @@ class Motor:
         return self._temperature
 
 
-class Tank:
+class Tank(PhysicsObject):
     def __init__(self):
         self._level = None
         self._level_state = 0
@@ -67,7 +103,7 @@ class Tank:
         self._cleaness = None
 
 
-class Pump:
+class Pump(PhysicsObject):
     def __init__(self):
         """
         initialize a hydraulic pump, which generate
@@ -114,7 +150,7 @@ class Pump:
         return self._temperature
 
 
-class Source:
+class Source(PhysicsObject):
     def __init__(self):
         """
         Initialization of hydraulic power source. It includes information of tank, pump, and relevant circuits.
@@ -124,13 +160,13 @@ class Source:
         self._tank = Tank()
 
 
-class Valve:
+class Valve(PhysicsObject):
     def __init__(self, type, port_num, state_num):
         self._spool_position = 0
         self._spool_cmd = 0
 
 
-class Cylinder:
+class Cylinder(PhysicsObject):
     def __init__(self):
         self._position = 0
         self._pressure_a = PressureNode()
@@ -153,7 +189,7 @@ class Cylinder:
         pass
 
 
-class Edge:
+class Edge(PhysicsObject):
     def __init__(self):
         self._pressure_1 = PressureNode()
         self._pressure_2 = PressureNode()
@@ -166,17 +202,29 @@ class Edge:
         return q
 
 
-class Valve:
-    def __init__(self, type, port_num, state_num):
+class Valve(PhysicsObject):
+    def __init__(self, type='proportional', port_num=4, state_num=3):
         self._ar_edge = []
         for idx in range(int(port_num/2)):
             self._ar_edge.append(Edge())
 
+    def control(self):
+        pass
 
-class Manipulator:
+
+class Manipulator(PhysicsObject):
     def __init__(self):
         """
         Initialization of a general hydraulic manipulator including actuators, like cylinder or motor,
         and control circuits like various valves
         """
-        pass
+        self._cylinder = Cylinder()
+        self._valve = Valve()
+
+
+class HydSystem(PhysicsObject):
+    def __init__(self):
+        self._manipulator = Manipulator()
+        self._source = Source()
+        self.variable = 1
+
