@@ -13,7 +13,7 @@ app.config.update(dict(
     USERNAME='admin',
     PASSWORD='default'
 ))
-app.config.from_envvar('SIMPLEMQTT_SETTINGS', silent=True)
+app.config.from_envvar('SIMPLE_MQTT_SETTINGS', silent=True)
 
 
 # db operation for web
@@ -45,6 +45,7 @@ def close_db(error):
     """Closes the database again at the end of the request."""
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
+
 
 # web control
 @app.route('/')
@@ -115,12 +116,3 @@ def logout():
     flash('You were logged out')
     return redirect(url_for('show_entries'))
 
-
-# # entry
-# if __name__ == '__main__':
-#     # start mqtt broker in a new process, if the port is used, find the pid by: $sudo lsof -i :1883
-#     # and kill it by $ sudo kill -9 <pid>
-#     subprocess.Popen('mosquitto -v -p 1885', shell=True)
-#     subprocess.Popen('celery -A celery_app:app worker --loglevel=info  ', shell=True)
-#     # app.run(host='0.0.0.0', debug=0)
-#     app.run()
