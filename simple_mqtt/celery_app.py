@@ -2,6 +2,7 @@ from celery import Celery
 import mqtt_admin
 from physics import model
 import json
+import database as db_admin
 
 
 # celery app initialization
@@ -35,7 +36,13 @@ def setup_periodic_tasks(sender, **kwargs):
 
 @app.task
 def periodic_model_update():
-    wish_list = model.hyd_sys.beat(0.3)
+    db = db_admin.connect_db()
+    cu = db.cursor()
+    package = cu.fetchone()
+    db.close()
+    model.hyd_sys.update(package)
+    wish_list = model.hyd_sys.acquire(0.3)
+    model.hyd_sys.update()
     if len(wish_list) > 0:
         mqtt_admin.client_beat.connect('127.0.0.1', 1885, 60)
         mqtt_admin.client_beat.publish('machine_data_request', payload=json.dumps({'wish_list': wish_list}))

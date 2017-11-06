@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
 import json
+import time
 
 client_sub = mqtt.Client()
 client_pub = mqtt.Client()
@@ -17,7 +18,7 @@ def on_message_sub(client, userdata, msg):
         if 'machine_data_request' in message:
             feedback = {}
             for key in message['machine_data_request']:
-                feedback['key'] = 1
+                feedback['key'] = {'value': time.clock(), 'time_stamp': time.asctime()}
             client_pub.connect('127.0.0.1', 1885, 60)
             client_pub.publish('machine_data_feedback', json.dumps({'machine_data': feedback}))
             client_pub.disconnect()

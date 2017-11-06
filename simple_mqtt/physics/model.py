@@ -20,17 +20,10 @@ class Data:
         self._record.append(self.value)
         self._t_record.append(self.time_stamp)
 
-    def bind_db(self, db_string):
-        self._db = db_string
-
-    def update(self):
-        # get value from database
-        db = db_admin.connect_db()
-        c = db.cursor()
-        text = c.fetchone()
-        print(text)
-        db.close()
-        # set_value(new_value, new_time_stamp)
+    def update(self, new_package):
+        self.value = new_package['value']
+        self.time_stamp = new_package['time_stamp']
+        self.set_record()
         pass
 
     def acquire(self, beat_period):
@@ -55,8 +48,15 @@ class Data:
     def time_stamp(self, new_time):
         self._time_stamp = new_time
 
+    @property
+    def id(self):
+        return self._id
+
     def assign_id(self, root_id, this_id):
         self._id = root_id + '$' + this_id
+
+    def set_ts(self, ts):
+        self._ts = ts
 
 
 class Thing:
@@ -67,18 +67,23 @@ class Thing:
     def bind(self):
         pass
 
-    def update(self):
+    def update(self, package):
         for key in self.__dict__:
             sub_obj = self.__dict__[key]
-            if isinstance(sub_obj, Thing) or isinstance(sub_obj, Data):
-                sub_obj.update()
+            if isinstance(sub_obj, Thing):
+                sub_obj.update(package)
+            elif isinstance(sub_obj, Data):
+                if sub_obj.id in package:
+                    sub_obj.update(package[sub_obj.id])
             elif isinstance(sub_obj, list):
                 for idx, item in enumerate(sub_obj):
-                    item.update()
+                    if isinstance(item, Thing):
+                        item.update(package)
+                    elif isinstance(item, Data):
+                        item.update(package[item.id])
             else:
                 pass
         self.process()
-        self.update()
 
     def process(self):
         pass
@@ -86,21 +91,20 @@ class Thing:
     def diagnose(self):
         pass
 
-    def beat(self, ts):
+    def acquire(self, ts):
         wish_list = []
         for key in self.__dict__:
             sub_obj = self.__dict__[key]
             if isinstance(sub_obj, Thing):
-                wish_list += sub_obj.beat(ts)
+                wish_list += sub_obj.acquire(ts)
             elif isinstance(sub_obj, list):
                 for item in sub_obj:
                     if isinstance(sub_obj, Thing):
-                        wish_list += item.beat(ts)
+                        wish_list += item.acquire(ts)
                     elif isinstance(item, Data):
                         data_to_get = item.acquire(ts)
                         if data_to_get is not None:
                             wish_list.append(data_to_get)
-                        item.update()
                     else:
                         # unexpection to be raised
                         pass
@@ -108,9 +112,7 @@ class Thing:
                 data_to_get = sub_obj.acquire(ts)
                 if data_to_get is not None:
                     wish_list.append(data_to_get)
-                sub_obj.update()
             else:
-                # unexpection to be raised
                 pass
         return wish_list
 
@@ -142,8 +144,10 @@ class Thing:
                 value = sub_obj.value
                 time_stamp = sub_obj.time_stamp
                 d[key] = {'value': value, 'time stamp': time_stamp}
+            elif key is '_id' and isinstance(sub_obj, str):
+                d[key] = sub_obj
             else:
-                d[key] = 'type error. This leaf is not a data object.'
+                pass
         return d
 
     def to_json(self):
