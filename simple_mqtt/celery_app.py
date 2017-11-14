@@ -41,8 +41,7 @@ def periodic_model_update():
     package = cu.fetchone()
     db.close()
     model.hyd_sys.update(package)
-    wish_list = model.hyd_sys.acquire(0.3)
-    model.hyd_sys.update()
+    wish_list = model.hyd_sys.acquire(5)
     if len(wish_list) > 0:
         mqtt_admin.client_beat.connect('127.0.0.1', 1885, 60)
         mqtt_admin.client_beat.publish('machine_data_request', payload=json.dumps({'wish_list': wish_list}))
@@ -62,4 +61,5 @@ def pub_a_msg(addr, port, topic, material):
 def sub_hold_on(addr, port):
     mqtt_admin.client_sub.connect(addr, int(port), 60)
     mqtt_admin.client_sub.loop_start()
+    print('mqtt sub client start on web side')
     pass

@@ -18,7 +18,7 @@ def on_message_sub(client, userdata, msg):
         if 'machine_data_request' in message:
             feedback = {}
             for key in message['machine_data_request']:
-                feedback['key'] = {'value': time.clock(), 'time_stamp': time.asctime()}
+                feedback[key] = {'value': time.clock(), 'time_stamp': time.asctime()}
             client_pub.connect('127.0.0.1', 1885, 60)
             client_pub.publish('machine_data_feedback', json.dumps({'machine_data': feedback}))
             client_pub.disconnect()
@@ -32,4 +32,4 @@ client_sub.on_connect = on_connect_sub
 client_sub.on_message = on_message_sub
 
 client_sub.connect('127.0.0.1', 1885, 60)
-client_sub.loop_start()
+client_sub.loop_forever()

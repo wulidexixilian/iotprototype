@@ -5,7 +5,7 @@ import database as db_admin
 
 
 class Data:
-    def __init__(self, data_type='float', data_id=-1, ts=0.5, default_value=0, max_record_len=10000):
+    def __init__(self, data_type='float', data_id=-1, ts=6, default_value=0, max_record_len=10000):
         self._type = data_type
         self._ts = ts
         self._id = data_id
@@ -68,22 +68,25 @@ class Thing:
         pass
 
     def update(self, package):
-        for key in self.__dict__:
-            sub_obj = self.__dict__[key]
-            if isinstance(sub_obj, Thing):
-                sub_obj.update(package)
-            elif isinstance(sub_obj, Data):
-                if sub_obj.id in package:
-                    sub_obj.update(package[sub_obj.id])
-            elif isinstance(sub_obj, list):
-                for idx, item in enumerate(sub_obj):
-                    if isinstance(item, Thing):
-                        item.update(package)
-                    elif isinstance(item, Data):
-                        item.update(package[item.id])
-            else:
-                pass
-        self.process()
+        if package is not None:
+            for key in self.__dict__:
+                sub_obj = self.__dict__[key]
+                if isinstance(sub_obj, Thing):
+                    sub_obj.update(package)
+                elif isinstance(sub_obj, Data):
+                    if sub_obj.id in package:
+                        sub_obj.update(package[sub_obj.id])
+                elif isinstance(sub_obj, list):
+                    for idx, item in enumerate(sub_obj):
+                        if isinstance(item, Thing):
+                            item.update(package)
+                        elif isinstance(item, Data):
+                            item.update(package[item.id])
+                else:
+                    pass
+            self.process()
+        else:
+            print('Empty DB')
 
     def process(self):
         pass
